@@ -1,38 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@400;500&family=Italiana&display=swap');
+
 :root {
-  color: #29251f;
-  background: #f9f7f0;
-  font-family: system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #000;
+  background: #fff;
+  color-scheme: light;
 }
 
-body {
+* {
+  box-sizing: border-box;
+}
+
+body,
+h1,
+p {
   margin: 0;
 }
 
-main {
+button {
+  font: inherit;
+}
+
+.home {
   display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
   min-height: 100svh;
-  box-sizing: border-box;
-  align-content: center;
-  padding: 1.5rem;
+  padding: 34px clamp(20px, 3.33vw, 48px) 53px;
+}
+
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.home-welcome {
+  font-size: 16px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.home-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.home-icon-button,
+.home-start {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.home-icon-button,
+.home-arrow-slot {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+}
+
+.home-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-arrow {
+  stroke-width: 1.75;
+}
+
+.home-icon-button:focus-visible,
+.home-start:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+.home-brand {
+  display: grid;
+  justify-items: center;
+  align-self: center;
+  gap: 12px;
+  padding-block: 32px;
   text-align: center;
 }
 
-h1 {
-  margin: 0;
-  font: 400 clamp(3rem, 13vw, 7rem) / 1.1 Georgia, serif;
-}
-
-p {
-  margin: 0.5rem 0;
-}
-
-.location {
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
+.home-location {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2.8px;
   text-transform: uppercase;
 }
 
-.tagline {
-  margin-top: 1rem;
-  font: italic 1.25rem Georgia, serif;
+.home-wordmark {
+  font-family: 'Italiana', Georgia, serif;
+  font-size: clamp(82px, 11.53vw, 166px);
+  font-weight: 400;
+  line-height: 1.16;
+}
+
+.home-slogan {
+  display: grid;
+  gap: 7px;
+}
+
+.home-tagline {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 36px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.home-translation {
+  font-size: 14px;
+  letter-spacing: 0.18px;
+}
+
+.home-footer {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.home-start {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.home-hint {
+  font-size: 12px;
+}
+
+.home-hint-mobile {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .home {
+    padding-top: 26px;
+    padding-bottom: max(58px, env(safe-area-inset-bottom));
+  }
+
+  .home-welcome {
+    font-size: 14px;
+  }
+
+  .home-actions {
+    gap: 2px;
+  }
+
+  .home-brand {
+    gap: 10px;
+  }
+
+  .home-location {
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .home-wordmark {
+    font-size: clamp(54px, 21vw, 82px);
+  }
+
+  .home-slogan {
+    gap: 6px;
+  }
+
+  .home-tagline {
+    font-size: 29px;
+  }
+
+  .home-translation {
+    font-size: 12px;
+  }
+
+  .home-hint-desktop {
+    display: none;
+  }
+
+  .home-hint-mobile {
+    display: block;
+  }
+}
+
+@media (max-height: 520px) {
+  .home {
+    padding-block: 12px 20px;
+  }
+
+  .home-brand {
+    padding-block: 20px;
+  }
+
+  .home-wordmark {
+    font-size: clamp(54px, 18vh, 96px);
+  }
 }

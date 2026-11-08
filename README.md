@@ -15,9 +15,9 @@ Horizons helps people in Buffalo find a place and time that fit how they want an
 Open the `Horizons` folder in VS Code. Use Node.js 22.12 or newer. In the terminal, run:
 
 ```powershell
-npm.cmd ci
-npm.cmd run build
-npm.cmd start
+npm ci
+npm run build
+npm start
 ```
 
 Open http://127.0.0.1:3000. Visit http://127.0.0.1:3000/api/health to check the API. On macOS or Linux, replace `npm.cmd` with `npm`.
