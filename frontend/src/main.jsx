@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import OccasionPicker from './OccasionPicker.jsx';
-import MoodPicker, { emptyMoodSelection, MoodHandoff } from './MoodPicker.jsx';
+import MoodPicker, { emptyMoodSelection } from './MoodPicker.jsx';
+import { moodScenes } from './moodScenes.js';
+import { blankProfile, buffaloToday, defaultDetails, History, PlannerHeader, Practical, Profile, Results, startingAreas } from './PlannerPages.jsx';
 import './styles.css';
 
 function AccountActions({ onOpenHistory, onOpenProfile }) {
@@ -61,44 +63,163 @@ function HomePage({ firstName, accountActions }) {
   );
 }
 
+async function api(path, method = 'GET', body) {
+  let response;
+  try {
+    response = await fetch('/api' + path, {
+      method,
+      ...(body !== undefined && { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    });
+  } catch {
+    throw new Error('Could not reach the Horizons server. Please try again.');
+  }
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data == null) throw new Error(data?.error ?? 'The Horizons server is unavailable. Please try again.');
+  return data;
+}
+
+const go = page => { window.location.hash = page; };
+
 function App() {
   const [page, setPage] = useState(window.location.hash);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
   const [moodSelection, setMoodSelection] = useState(emptyMoodSelection);
+  const [details, setDetails] = useState(() => defaultDetails());
+  const [account, setAccount] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const loaded = useRef(null);
+  const today = buffaloToday();
+
+  function loadAccount() {
+    if (!loaded.current) {
+      setLoadError('');
+      loaded.current = api('/account').then(data => { setAccount(data); return data; }).catch(error => {
+        loaded.current = null;
+        setLoadError(error.message);
+        throw error;
+      });
+    }
+    return loaded.current;
+  }
+  useEffect(() => { loadAccount().catch(() => {}); }, []);
 
   useEffect(() => {
     const updatePage = () => {
-      window.scrollTo(0, 0);
       setPage(window.location.hash);
+      setError('');
+      window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', updatePage);
     return () => window.removeEventListener('hashchange', updatePage);
   }, []);
 
-  const accountActions = <AccountActions />;
+  const firstName = account?.profile.firstName;
+  const accountActions = <AccountActions onOpenHistory={() => go('history')} onOpenProfile={() => go('profile')} />;
+  const moods = [...moodSelection.presets, ...moodSelection.custom];
+  const searchId = page.startsWith('#results/') ? page.slice(9) : null;
+  const search = searchId && account?.history.find(item => item.id === searchId);
 
   function chooseOccasion(occasion) {
     if (selectedOccasion?.id !== occasion.id || selectedOccasion?.label !== occasion.label) {
       setMoodSelection(emptyMoodSelection);
     }
     setSelectedOccasion(occasion);
-    window.location.hash = 'mood';
+    go('mood');
   }
 
-  if (page === '#mood' && selectedOccasion) {
+  function updateSearch(item) {
+    setAccount(previous => ({ ...previous, history: [item, ...previous.history.filter(entry => entry.id !== item.id)]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 50) }));
+  }
+
+  async function findPlans() {
+    setBusy(true);
+    setError('');
+    try {
+      await loadAccount();
+      const result = await api('/recommendations', 'POST', { ...details, occasion: selectedOccasion, moods,
+        travel: Number(details.travel), budget: details.budget === '' || details.budget == null ? null : Number(details.budget) });
+      updateSearch(result);
+      if (window.location.hash === '#details') go('results/' + result.id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function loadPreferences(item) {
+    const { occasion, moods: words, ...settings } = item.preferences;
+    setSelectedOccasion(occasion);
+    const allowed = new Set(moodScenes[occasion.id]?.presets.map(preset => preset.word));
+    setMoodSelection({ presets: words.filter(word => allowed.has(word)), custom: words.filter(word => !allowed.has(word)) });
+    setDetails({ ...settings, budget: settings.budget ?? '', date: settings.date < today ? today : settings.date,
+      endDate: settings.endDate > settings.date && settings.endDate >= today ? settings.endDate : '' });
+  }
+
+  async function choosePlan(plan) {
+    if (search.chosenId === plan.id) { go('history'); return; }
+    setBusy(true);
+    setError('');
+    try {
+      updateSearch(await api('/history/' + search.id + '/choice', 'PUT', { placeId: plan.id }));
+      if (window.location.hash === page) go('history');
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  }
+
+  async function saveReview(id, review) {
+    updateSearch(await api('/history/' + id + '/review', 'PUT', review));
+  }
+
+  async function saveProfile(profile) {
+    await loadAccount();
+    const saved = await api('/profile', 'PUT', profile);
+    setAccount(previous => ({ ...previous, profile: saved }));
+    return saved;
+  }
+
+  function newPlan() {
+    setSelectedOccasion(null);
+    setMoodSelection(emptyMoodSelection);
+    setDetails(defaultDetails());
+    go('occasion');
+  }
+
+  const needsAccount = ['#profile', '#history'].includes(page) || searchId;
+  let content;
+  if (needsAccount && !account) {
+    content = <main className="plan-main"><p role="status">{loadError || 'Loading your plans…'}</p>
+      {loadError && <button className="plan-action" onClick={() => loadAccount().catch(() => {})}>Try again</button>}
+    </main>;
+  } else if (page === '#profile') {
+    content = <Profile profile={account?.profile ?? blankProfile} save={saveProfile} />;
+  } else if (page === '#history') {
+    content = <History history={account.history} today={today} newPlan={newPlan} saveReview={saveReview}
+      open={item => { loadPreferences(item); go('results/' + item.id); }} />;
+  } else if (searchId) {
+    content = search ? <Results search={search} busy={busy} error={error} onChoose={choosePlan}
+      onEdit={() => loadPreferences(search)} /> : <main className="plan-main"><h1>Search unavailable</h1><a href="#history">Planning history</a></main>;
+  } else if (page === '#details' && selectedOccasion && moods.length) {
+    content = <Practical occasion={selectedOccasion} moods={moods} details={details} setDetails={setDetails}
+      today={today} areas={account?.areas ?? startingAreas} busy={busy} error={error} submit={findPlans} />;
+  }
+  if (content) return <div className="planner-page" key={page}>
+    <PlannerHeader firstName={firstName} active={page.slice(1)} />{content}
+  </div>;
+
+  if (['#mood', '#details'].includes(page) && selectedOccasion) {
     return (
       <MoodPicker
         key={selectedOccasion.id}
         occasion={selectedOccasion}
         selection={moodSelection}
         onChange={setMoodSelection}
-        onContinue={() => { window.location.hash = 'details'; }}
+        onContinue={() => go('details')}
       />
     );
-  }
-
-  if (page === '#details' && selectedOccasion && (moodSelection.presets.length || moodSelection.custom.length)) {
-    return <MoodHandoff occasion={selectedOccasion} selection={moodSelection} />;
   }
 
   if (['#occasion', '#mood', '#details'].includes(page)) {
@@ -111,7 +232,7 @@ function App() {
     );
   }
 
-  return <HomePage firstName="Alex" accountActions={accountActions} />;
+  return <HomePage firstName={firstName} accountActions={accountActions} />;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

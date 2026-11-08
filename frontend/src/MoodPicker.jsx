@@ -77,10 +77,13 @@ export default function MoodPicker({ occasion, selection, onChange, onContinue }
   const grade = scene.presets.find((preset) => preset.word === latestPreset);
   const dialogRef = useRef(null);
   const headingRef = useRef(null);
+  const dropTimer = useRef(null);
+  const [leaving, setLeaving] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
+    return () => clearTimeout(dropTimer.current);
   }, []);
 
   function togglePreset(word) {
@@ -95,7 +98,16 @@ export default function MoodPicker({ occasion, selection, onChange, onContinue }
   }
 
   return (
-    <div className="mood-page" style={{
+    <div className={leaving ? 'mood-page mood-leaving' : 'mood-page'} onPointerMove={event => {
+      if (event.pointerType !== 'mouse' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const page = event.currentTarget;
+      const frame = page.getBoundingClientRect();
+      page.style.setProperty('--scene-x', ((event.clientX - frame.left) / frame.width - .5) * -13 + 'px');
+      page.style.setProperty('--scene-y', ((event.clientY - frame.top) / frame.height - .5) * -9 + 'px');
+    }} onPointerLeave={event => {
+      event.currentTarget.style.removeProperty('--scene-x');
+      event.currentTarget.style.removeProperty('--scene-y');
+    }} style={{
       '--mood-tint': grade?.color ?? 'transparent',
       '--mood-opacity': grade?.opacity ?? 0,
       '--mood-brightness': grade?.brightness ?? 1,
@@ -163,8 +175,15 @@ export default function MoodPicker({ occasion, selection, onChange, onContinue }
           <button
             className="mood-continue"
             type="button"
-            disabled={!selection.presets.length && !selection.custom.length}
-            onClick={onContinue}
+            disabled={leaving || (!selection.presets.length && !selection.custom.length)}
+            onClick={() => {
+              if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                onContinue();
+              } else {
+                setLeaving(true);
+                dropTimer.current = setTimeout(onContinue, 440);
+              }
+            }}
           >
             Practical details <Arrow />
           </button>
@@ -176,22 +195,3 @@ export default function MoodPicker({ occasion, selection, onChange, onContinue }
   );
 }
 
-export function MoodHandoff({ occasion, selection }) {
-  return (
-    <div className="picker-page">
-      <header className="picker-header">
-        <a className="picker-logo" href="#home" aria-label="Horizons home">
-          <img src={logo} alt="" width="182" height="44" />
-        </a>
-      </header>
-      <main className="picker-content picker-content-custom">
-        <a className="picker-back" href="#mood">← Mood</a>
-        <div className="picker-intro">
-          <p className="picker-step">03 / {occasion.label}</p>
-          <h1>Practical details</h1>
-          <p>Selected moods: {[...selection.presets, ...selection.custom].join(', ')}.</p>
-        </div>
-      </main>
-    </div>
-  );
-}
