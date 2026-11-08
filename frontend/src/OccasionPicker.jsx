@@ -139,10 +139,6 @@ export default function OccasionPicker({ header, selectedOccasion, onSelectOccas
               </span>
               <DirectionArrow />
             </button>
-
-            <p className="picker-status" role="status">
-              {selectedOccasion ? `Selected: ${selectedOccasion.label}` : ''}
-            </p>
           </>
         )}
       </main>
