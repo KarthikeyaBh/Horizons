@@ -1,0 +1,38 @@
+:root {
+  color: #29251f;
+  background: #f9f7f0;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  display: grid;
+  min-height: 100svh;
+  box-sizing: border-box;
+  align-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+  font: 400 clamp(3rem, 13vw, 7rem) / 1.1 Georgia, serif;
+}
+
+p {
+  margin: 0.5rem 0;
+}
+
+.location {
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tagline {
+  margin-top: 1rem;
+  font: italic 1.25rem Georgia, serif;
+}

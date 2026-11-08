@@ -1,0 +1,18 @@
+{
+  "name": "horizons",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": "^20.19.0 || >=22.12.0" },
+  "scripts": {
+    "dev": "vite frontend",
+    "dev:api": "node --watch backend/server.js",
+    "build": "vite build frontend",
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": { "vite": "^7.3.0" }
+}
