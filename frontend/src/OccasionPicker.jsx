@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import logo from './assets/Horizons-Logo.svg';
 
 const categories = [
   {
@@ -46,7 +45,7 @@ function DirectionArrow({ left = false }) {
   );
 }
 
-export default function OccasionPicker({ accountActions, selectedOccasion, onSelectOccasion }) {
+export default function OccasionPicker({ header, selectedOccasion, onSelectOccasion, active = true }) {
   const [categoryIndex, setCategoryIndex] = useState(() => Math.max(0, categories.findIndex(
     (category) => category.events.some(([id]) => id === selectedOccasion?.id)
   )));
@@ -55,8 +54,8 @@ export default function OccasionPicker({ accountActions, selectedOccasion, onSel
   const titleRef = useRef(null);
 
   useEffect(() => {
-    titleRef.current?.focus({ preventScroll: true });
-  }, [showOther]);
+    if (active) titleRef.current?.focus({ preventScroll: true });
+  }, [active, showOther]);
 
   function submitOther(event) {
     event.preventDefault();
@@ -67,21 +66,8 @@ export default function OccasionPicker({ accountActions, selectedOccasion, onSel
   }
 
   return (
-    <div
-      className="picker-page"
-      onWheel={(event) => {
-        if (!showOther && !event.ctrlKey && event.deltaY < -15
-          && Math.abs(event.deltaY) > Math.abs(event.deltaX) && window.scrollY === 0) {
-          window.location.hash = 'home';
-        }
-      }}
-    >
-      <header className="picker-header">
-        <a className="picker-logo" href="#home" aria-label="Horizons home">
-          <img src={logo} alt="" width="182" height="44" />
-        </a>
-        {accountActions}
-      </header>
+    <div className="picker-page">
+      {header}
 
       <main className={showOther ? 'picker-content picker-content-custom' : 'picker-content'}>
         {showOther ? (

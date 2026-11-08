@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import OccasionPicker from './OccasionPicker.jsx';
 import MoodPicker, { emptyMoodSelection } from './MoodPicker.jsx';
@@ -25,17 +25,11 @@ function AccountActions({ onOpenHistory, onOpenProfile }) {
   );
 }
 
-function HomePage({ firstName, accountActions }) {
-  const name = firstName?.trim();
-
+function HomePage({ greeting, accountActions }) {
   return (
-    <div className="home" onWheel={(event) => {
-      if (!event.ctrlKey && event.deltaY > 15 && event.deltaY > Math.abs(event.deltaX)) {
-        window.location.hash = 'occasion';
-      }
-    }}>
+    <div className="home">
       <header className="home-header">
-        <p className="home-welcome">{name ? `Welcome, ${name}` : 'Welcome'}</p>
+        <p className="home-welcome">{greeting}</p>
         {accountActions}
       </header>
 
@@ -61,6 +55,45 @@ function HomePage({ firstName, accountActions }) {
       </footer>
     </div>
   );
+}
+
+function LandingPages({ page, onScrollPage, greeting, accountActions, pickerProps }) {
+  const scroller = useRef(null);
+  const occasion = useRef(null);
+  const initialized = useRef(false);
+  const settleTimer = useRef(null);
+  const active = page === '#occasion';
+
+  useLayoutEffect(() => {
+    const target = active ? occasion.current.offsetTop : 0;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const top = scroller.current.scrollTop;
+    // Preserve the scroll position inside a taller picker when the user scrolled there.
+    if (active ? top < target - 2 : top > 2) {
+      scroller.current.scrollTo({ top: target, behavior: initialized.current && !reduceMotion ? 'smooth' : 'instant' });
+    }
+    initialized.current = true;
+    return () => clearTimeout(settleTimer.current);
+  }, [active]);
+
+  function syncScroll() {
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      if (window.location.hash !== page) return;
+      const top = scroller.current.scrollTop;
+      if (top <= 2 && active) onScrollPage('#home');
+      if (top >= occasion.current.offsetTop - 2 && !active) onScrollPage('#occasion');
+    }, 140);
+  }
+
+  return <div className="landing-scroll" ref={scroller} onScroll={syncScroll}>
+    <section aria-label="Home">
+      <HomePage greeting={greeting} accountActions={accountActions} />
+    </section>
+    <section aria-label="Occasion" ref={occasion}>
+      <OccasionPicker {...pickerProps} active={active} />
+    </section>
+  </div>;
 }
 
 async function api(path, method = 'GET', body) {
@@ -115,8 +148,10 @@ function App() {
     return () => window.removeEventListener('hashchange', updatePage);
   }, []);
 
-  const firstName = account?.profile.firstName;
+  const firstName = account?.profile.firstName.trim();
+  const greeting = firstName ? `Welcome, ${firstName}` : 'Welcome Guest';
   const accountActions = <AccountActions onOpenHistory={() => go('history')} onOpenProfile={() => go('profile')} />;
+  const plannerHeader = <PlannerHeader greeting={greeting} active={page.slice(1)} />;
   const moods = [...moodSelection.presets, ...moodSelection.custom];
   const searchId = page.startsWith('#results/') ? page.slice(9) : null;
   const search = searchId && account?.history.find(item => item.id === searchId);
@@ -207,13 +242,14 @@ function App() {
       today={today} areas={account?.areas ?? startingAreas} busy={busy} error={error} submit={findPlans} />;
   }
   if (content) return <div className="planner-page" key={page}>
-    <PlannerHeader firstName={firstName} active={page.slice(1)} />{content}
+    {plannerHeader}{content}
   </div>;
 
   if (['#mood', '#details'].includes(page) && selectedOccasion) {
     return (
       <MoodPicker
         key={selectedOccasion.id}
+        header={plannerHeader}
         occasion={selectedOccasion}
         selection={moodSelection}
         onChange={setMoodSelection}
@@ -222,17 +258,13 @@ function App() {
     );
   }
 
-  if (['#occasion', '#mood', '#details'].includes(page)) {
-    return (
-      <OccasionPicker
-        accountActions={accountActions}
-        selectedOccasion={selectedOccasion}
-        onSelectOccasion={chooseOccasion}
-      />
-    );
-  }
+  const pickerProps = { header: plannerHeader, selectedOccasion, onSelectOccasion: chooseOccasion };
+  if (['#mood', '#details'].includes(page)) return <OccasionPicker {...pickerProps} />;
 
-  return <HomePage firstName={firstName} accountActions={accountActions} />;
+  return <LandingPages page={page} onScrollPage={next => {
+    window.history.pushState(null, '', next);
+    setPage(next);
+  }} greeting={greeting} accountActions={accountActions} pickerProps={pickerProps} />;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

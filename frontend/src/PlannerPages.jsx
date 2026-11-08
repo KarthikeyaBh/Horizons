@@ -26,11 +26,11 @@ function Icon({ name }) {
   return <svg className="plan-icon" viewBox="0 0 24 24" aria-hidden="true"><path d={arrows[name]} /></svg>;
 }
 
-export function PlannerHeader({ firstName, active }) {
+export function PlannerHeader({ greeting, active }) {
   return <header className="plan-header">
     <a href="#home" aria-label="Horizons home"><img src={logo} alt="" width="182" height="44" /></a>
     <nav aria-label="Your account">
-      <span>{firstName ? 'Welcome, ' + firstName : 'Welcome'}</span>
+      <span>{greeting}</span>
       <a href="#history" aria-current={active === 'history' ? 'page' : undefined}><Icon name="history" /> History</a>
       <a href="#profile" aria-current={active === 'profile' ? 'page' : undefined}><Icon name="profile" /> Profile</a>
     </nav>

@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import logo from './assets/Horizons-Logo.svg';
 import { moodScenes } from './moodScenes.js';
 
 export const emptyMoodSelection = { presets: [], custom: [] };
@@ -71,7 +70,7 @@ function CustomMoodDialog({ dialogRef, selection, onChange }) {
   );
 }
 
-export default function MoodPicker({ occasion, selection, onChange, onContinue }) {
+export default function MoodPicker({ header, occasion, selection, onChange, onContinue }) {
   const scene = moodScenes[occasion.id] ?? moodScenes.other;
   const latestPreset = selection.presets.at(-1);
   const grade = scene.presets.find((preset) => preset.word === latestPreset);
@@ -122,11 +121,7 @@ export default function MoodPicker({ occasion, selection, onChange, onContinue }
         <div className="mood-scrim" aria-hidden="true" />
       </div>
 
-      <header className="mood-header">
-        <a href="#home" className="mood-logo" aria-label="Horizons home">
-          <img src={logo} alt="" width="182" height="44" />
-        </a>
-      </header>
+      {header}
 
       <main className="mood-content">
         <a className="mood-back" href="#occasion"><Arrow back /> Occasion</a>
