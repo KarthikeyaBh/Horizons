@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import OccasionPicker from './OccasionPicker.jsx';
+import MoodPicker, { emptyMoodSelection, MoodHandoff } from './MoodPicker.jsx';
 import './styles.css';
 
 function AccountActions({ onOpenHistory, onOpenProfile }) {
@@ -63,6 +64,7 @@ function HomePage({ firstName, accountActions }) {
 function App() {
   const [page, setPage] = useState(window.location.hash);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
+  const [moodSelection, setMoodSelection] = useState(emptyMoodSelection);
 
   useEffect(() => {
     const updatePage = () => {
@@ -75,12 +77,36 @@ function App() {
 
   const accountActions = <AccountActions />;
 
-  if (page === '#occasion') {
+  function chooseOccasion(occasion) {
+    if (selectedOccasion?.id !== occasion.id || selectedOccasion?.label !== occasion.label) {
+      setMoodSelection(emptyMoodSelection);
+    }
+    setSelectedOccasion(occasion);
+    window.location.hash = 'mood';
+  }
+
+  if (page === '#mood' && selectedOccasion) {
+    return (
+      <MoodPicker
+        key={selectedOccasion.id}
+        occasion={selectedOccasion}
+        selection={moodSelection}
+        onChange={setMoodSelection}
+        onContinue={() => { window.location.hash = 'details'; }}
+      />
+    );
+  }
+
+  if (page === '#details' && selectedOccasion && (moodSelection.presets.length || moodSelection.custom.length)) {
+    return <MoodHandoff occasion={selectedOccasion} selection={moodSelection} />;
+  }
+
+  if (['#occasion', '#mood', '#details'].includes(page)) {
     return (
       <OccasionPicker
         accountActions={accountActions}
         selectedOccasion={selectedOccasion}
-        onSelectOccasion={setSelectedOccasion}
+        onSelectOccasion={chooseOccasion}
       />
     );
   }

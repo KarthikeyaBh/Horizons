@@ -47,7 +47,9 @@ function DirectionArrow({ left = false }) {
 }
 
 export default function OccasionPicker({ accountActions, selectedOccasion, onSelectOccasion }) {
-  const [categoryIndex, setCategoryIndex] = useState(0);
+  const [categoryIndex, setCategoryIndex] = useState(() => Math.max(0, categories.findIndex(
+    (category) => category.events.some(([id]) => id === selectedOccasion?.id)
+  )));
   const [showOther, setShowOther] = useState(false);
   const [customName, setCustomName] = useState('');
   const titleRef = useRef(null);
